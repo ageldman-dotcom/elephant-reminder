@@ -79,9 +79,14 @@ After changing any file in `docs/`, bump `CACHE` in `docs/sw.js`
 (`elephant-v1` → `elephant-v2`) so phones pick up the new version instead of
 serving the cached one.
 
-### The worker (one-time)
+### The worker
 
-Requires a free Cloudflare account. No credit card.
+Already deployed. Live at **https://elephant-reminder-push.ageldman.workers.dev**
+(account `7217d648e886052ac65e3ecbb6fdab7d`, KV namespace `c1aec739ca934432a57b277ca352d765`,
+workers.dev subdomain `ageldman`). Redeploy after changing `worker/src/index.js` with
+`cd worker && npx wrangler deploy`.
+
+To rebuild it from scratch on a fresh account:
 
 ```bash
 cd worker
