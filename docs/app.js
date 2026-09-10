@@ -13,7 +13,7 @@
    fallback (which needs no server at all) fully working.
    --------------------------------------------------------------- */
 const CONFIG = {
-  WORKER_URL: 'https://noa-pill-push.ageldman.workers.dev',
+  WORKER_URL: '',
   VAPID_PUBLIC_KEY: 'BOOu8-i86U9eashAbNiGe2NkPABmONeP0sNibQHPb9uUGpq_1NZC2qoY_7JsneYxPCF10v-ZfbjXYk629UBR5iE'
 };
 
@@ -69,6 +69,7 @@ const STRINGS = {
     pushNeedInstall: 'To get notifications, this needs to be added to your Home Screen first. <a href="install.html">How to do that →</a>',
     pushOn: 'Notifications are on. They will appear on your iPhone and Apple Watch, and stop for the day as soon as you mark the pill taken.',
     pushFailed: 'Could not turn on notifications. Check your internet and try again.',
+    pushNotSetUp: 'Push notifications are not connected yet. In the meantime use “Also add these to my Calendar” below — those alerts reach your Apple Watch too.',
 
     everyDay: 'Every day', daysNone: 'Never', editWord: 'Edit',
     remNewTitle: 'New reminder', remEditTitle: 'Edit reminder',
@@ -140,6 +141,7 @@ const STRINGS = {
     pushNeedInstall: 'כדי לקבל התראות צריך קודם להוסיף את האפליקציה למסך הבית. <a href="install.html">איך עושים את זה ←</a>',
     pushOn: 'ההתראות פועלות. הן יופיעו באייפון ובשעון, וייפסקו לאותו יום ברגע שתסמני שלקחת.',
     pushFailed: 'לא הצלחנו להפעיל התראות. בדקי את החיבור לאינטרנט ונסי שוב.',
+    pushNotSetUp: 'התראות ה-Push עדיין לא מחוברות. בינתיים השתמשי ב־“להוסיף את אלה גם ליומן” למטה — ההתראות האלה מגיעות גם לשעון.',
 
     everyDay: 'כל יום', daysNone: 'אף פעם', editWord: 'עריכה',
     remNewTitle: 'תזכורת חדשה', remEditTitle: 'עריכת תזכורת',
@@ -619,6 +621,7 @@ function renderPushNotice() {
   const r = S.settings.reminders;
   if (!r.enabled) { el.hidden = true; return; }
 
+  if (!CONFIG.WORKER_URL) { el.hidden = false; el.textContent = t('pushNotSetUp'); return; }
   if (!isInstalled()) { el.hidden = false; el.innerHTML = t('pushNeedInstall'); return; }
   if (!('Notification' in window)) { el.hidden = true; return; }
   if (Notification.permission === 'denied') { el.hidden = false; el.textContent = t('pushBlocked'); return; }
