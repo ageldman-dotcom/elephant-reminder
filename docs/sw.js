@@ -8,7 +8,7 @@
 'use strict';
 
 // Bump this string whenever the app files change, so phones pick up the new version.
-const CACHE = 'elephant-v2';
+const CACHE = 'elephant-v3';
 
 const SHELL = [
   './',
@@ -39,8 +39,20 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
-/* Stale-while-revalidate for our own files: instant and offline-proof,
-   while still picking up new versions in the background. */
+/* Code and markup are network-first with a short timeout, so a message that
+   is no longer true (like "push is not connected yet") can never be pinned on
+   her phone by a stale cache. Icons stay cache-first. Either way the cache is
+   the fallback, so the app still opens with no internet at all. */
+const NETWORK_FIRST = /\.(?:html|js|css|webmanifest)$|\/$/;
+
+function timedFetch(req, ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    fetch(req).then((res) => { clearTimeout(timer); resolve(res); })
+              .catch(() => { clearTimeout(timer); resolve(null); });
+  });
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -50,20 +62,28 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const cached = await cache.match(req, { ignoreSearch: true });
 
+    if (NETWORK_FIRST.test(url.pathname)) {
+      const fresh = await timedFetch(req, 3000);
+      if (fresh && fresh.ok) {
+        cache.put(req, fresh.clone()).catch(() => {});
+        return fresh;
+      }
+      const cached = await cache.match(req, { ignoreSearch: true });
+      if (cached) return cached;
+      return (await cache.match('./index.html')) ||
+             new Response('Offline', { status: 503, headers: { 'content-type': 'text/plain' } });
+    }
+
+    // Everything else (icons): cache-first, refreshed in the background.
+    const cached = await cache.match(req, { ignoreSearch: true });
     const network = fetch(req).then((res) => {
       if (res && res.ok) cache.put(req, res.clone()).catch(() => {});
       return res;
     }).catch(() => null);
 
     if (cached) { event.waitUntil(network); return cached; }
-
-    const fresh = await network;
-    if (fresh) return fresh;
-
-    // Last resort for a navigation with an empty cache.
-    return (await cache.match('./index.html')) ||
+    return (await network) ||
            new Response('Offline', { status: 503, headers: { 'content-type': 'text/plain' } });
   })());
 });
