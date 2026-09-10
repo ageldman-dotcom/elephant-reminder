@@ -9,7 +9,7 @@ Add-Type -AssemblyName System.Drawing
 
 $root    = Split-Path -Parent $PSScriptRoot
 $tools   = Join-Path $root 'tools'
-$iconDir = Join-Path $root 'app\icons'
+$iconDir = Join-Path $root 'docs\icons'
 New-Item -ItemType Directory -Force -Path $iconDir | Out-Null
 
 $browser = @(
@@ -59,4 +59,4 @@ Resize-Png $mainSrc (Join-Path $iconDir 'icon-192.png') 192
 Resize-Png $mainSrc (Join-Path $iconDir 'icon-180.png') 180
 Resize-Png $maskSrc (Join-Path $iconDir 'icon-maskable-512.png') 512
 
-Write-Host "`nIcons written to app\icons"
+Write-Host "`nIcons written to docs\icons"
