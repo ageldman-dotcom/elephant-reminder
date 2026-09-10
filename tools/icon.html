@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; }
+  .tile {
+    width: 1024px; height: 1024px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(150deg, #FDE7EC 0%, #F8C9D6 55%, #F3B6C8 100%);
+  }
+  svg { width: 800px; height: auto; overflow: visible; }
+  .ear, .head { fill: #E9F0FB; }
+  .ear-in     { fill: #F09FB5; }
+  .trunk      { fill: none; stroke: #E9F0FB; stroke-width: 19; stroke-linecap: round; }
+  .hair path  { fill: none; stroke: #E9F0FB; stroke-width: 5; stroke-linecap: round; }
+  .eyes path  { fill: none; stroke: #3E4763; stroke-width: 5.5; stroke-linecap: round; }
+  .blush      { fill: #EE8FA6; opacity: .55; }
+</style>
+<div class="tile">
+  <svg viewBox="14 22 192 164">
+    <g>
+      <ellipse class="ear" cx="54" cy="86" rx="37" ry="45" transform="rotate(-14 54 86)"/>
+      <ellipse class="ear-in" cx="58" cy="88" rx="22" ry="29" transform="rotate(-14 58 88)"/>
+    </g>
+    <g>
+      <ellipse class="ear" cx="166" cy="86" rx="37" ry="45" transform="rotate(14 166 86)"/>
+      <ellipse class="ear-in" cx="162" cy="88" rx="22" ry="29" transform="rotate(14 162 88)"/>
+    </g>
+    <g class="hair"><path d="M102 46 Q106 32 112 45"/><path d="M114 44 Q121 31 125 45"/></g>
+    <ellipse class="head" cx="110" cy="92" rx="50" ry="47"/>
+    <path class="trunk" d="M110 102 C106 133 109 158 124 166"/>
+    <g class="eyes"><path d="M83 89 Q92 77 101 89"/><path d="M120 89 Q129 77 138 89"/></g>
+    <ellipse class="blush" cx="77" cy="105" rx="9" ry="6"/>
+    <ellipse class="blush" cx="144" cy="105" rx="9" ry="6"/>
+  </svg>
+</div>

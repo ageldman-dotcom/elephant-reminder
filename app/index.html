@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="soft">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>The Wife's Elephant Reminder</title>
+
+<!-- Home-screen web app behaviour on iOS. Both names on purpose: the apple- one is
+     legacy but still honoured, the unprefixed one is the standard. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Elephant">
+<meta name="theme-color" content="#FBF6F1">
+<meta name="color-scheme" content="light dark">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ───────────────────────── TODAY ───────────────────────── -->
+  <section class="view" id="view-today">
+    <header class="brand">
+      <h1 id="appName"></h1>
+      <p id="tagline"></p>
+    </header>
+
+    <p class="datestamp" id="todayDate"></p>
+
+    <div class="hero" id="hero" data-state="pending">
+
+      <!-- The mascot. One drawing; the expression and trunk swap on state. -->
+      <svg class="eleph" viewBox="0 0 220 200" role="img" aria-labelledby="elephAlt">
+        <title id="elephAlt">Elephant</title>
+
+        <g class="ear-l">
+          <ellipse class="ear"    cx="54" cy="86" rx="37" ry="45" transform="rotate(-14 54 86)"/>
+          <ellipse class="ear-in" cx="58" cy="88" rx="22" ry="29" transform="rotate(-14 58 88)"/>
+        </g>
+        <g class="ear-r">
+          <ellipse class="ear"    cx="166" cy="86" rx="37" ry="45" transform="rotate(14 166 86)"/>
+          <ellipse class="ear-in" cx="162" cy="88" rx="22" ry="29" transform="rotate(14 162 88)"/>
+        </g>
+
+        <g class="hair">
+          <path d="M102 46 Q106 32 112 45"/>
+          <path d="M114 44 Q121 31 125 45"/>
+        </g>
+
+        <ellipse class="head" cx="110" cy="92" rx="50" ry="47"/>
+
+        <!-- waiting: trunk hangs down, holding out the pill -->
+        <g class="trunk-pending">
+          <path class="trunk" d="M110 100 C104 140 109 170 127 172 C139 173 143 162 135 156"/>
+          <g class="pill-held" transform="rotate(-20 136 151)">
+            <rect x="126" y="145.5" width="21" height="11.5" rx="5.75"/>
+            <path class="pill-split" d="M136.5 145.5 L136.5 157"/>
+          </g>
+        </g>
+
+        <!-- done: trunk raised, a little sparkle -->
+        <g class="trunk-taken">
+          <path class="trunk" d="M110 104 C106 145 116 172 140 165 C156 160 158 145 148 140"/>
+          <g class="sparkles">
+            <path d="M163 106 l3.2 -9.5 3.2 9.5 9.5 3.2 -9.5 3.2 -3.2 9.5 -3.2 -9.5 -9.5 -3.2 z"/>
+            <circle cx="184" cy="130" r="4"/>
+            <circle cx="150" cy="80" r="3"/>
+          </g>
+        </g>
+
+        <g class="eyes-open">
+          <circle cx="92"  cy="86" r="8.5"/>
+          <circle cx="129" cy="86" r="8.5"/>
+          <circle class="glint" cx="94.5"  cy="83" r="3"/>
+          <circle class="glint" cx="131.5" cy="83" r="3"/>
+        </g>
+        <g class="eyes-happy">
+          <path d="M83 89 Q92 77 101 89"/>
+          <path d="M120 89 Q129 77 138 89"/>
+        </g>
+
+        <ellipse class="blush" cx="77"  cy="105" rx="9" ry="6"/>
+        <ellipse class="blush" cx="144" cy="105" rx="9" ry="6"/>
+      </svg>
+
+      <p class="hero-title" id="heroTitle" aria-live="polite"></p>
+      <p class="hero-sub" id="heroSub"></p>
+    </div>
+
+    <div class="cta-wrap">
+      <button class="cta" id="markBtn" type="button"></button>
+      <div class="undo" id="undoBar" hidden>
+        <span id="undoText"></span>
+        <button type="button" id="undoBtn"></button>
+      </div>
+    </div>
+
+    <div class="streak" id="streak"></div>
+    <p class="hint" id="nextReminder"></p>
+    <p class="hint warn" id="refillHint" hidden></p>
+
+    <div class="install-nudge" id="installNudge" hidden>
+      <span id="installNudgeText"></span>
+      <a href="install.html" id="installNudgeLink"></a>
+    </div>
+  </section>
+
+  <!-- ──────────────────────── HISTORY ──────────────────────── -->
+  <section class="view" id="view-history" hidden>
+    <div class="month-nav">
+      <button type="button" id="prevMonth" class="icon-btn" aria-label="Previous month">‹</button>
+      <h2 id="monthLabel"></h2>
+      <button type="button" id="nextMonth" class="icon-btn" aria-label="Next month">›</button>
+    </div>
+
+    <div class="weekdays" id="weekdays"></div>
+    <div class="grid" id="calGrid"></div>
+
+    <div class="legend">
+      <span><i class="dot taken"></i><span id="legTaken"></span></span>
+      <span><i class="dot missed"></i><span id="legMissed"></span></span>
+      <span><i class="dot late"></i><span id="legLate"></span></span>
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <button class="ghost" type="button" id="exportCsv"></button>
+  </section>
+
+  <!-- ──────────────────────── SETTINGS ─────────────────────── -->
+  <section class="view" id="view-settings" hidden>
+    <h2 id="settingsTitle"></h2>
+
+    <div class="card">
+      <h3 id="lblLook"></h3>
+      <div class="seg" id="themeSeg" role="group">
+        <button type="button" data-theme-choice="soft"></button>
+        <button type="button" data-theme-choice="calm"></button>
+      </div>
+      <h3 id="lblLanguage"></h3>
+      <div class="seg" id="langSeg" role="group">
+        <button type="button" data-lang-choice="en">English</button>
+        <button type="button" data-lang-choice="he">עברית</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 id="lblPill"></h3>
+      <label class="field">
+        <span id="lblPillName"></span>
+        <input type="text" id="pillName" maxlength="40" autocomplete="off">
+      </label>
+      <label class="field">
+        <span id="lblRollover"></span>
+        <select id="rollover"></select>
+      </label>
+      <p class="fine" id="hintRollover"></p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h3 id="lblReminders"></h3>
+        <label class="switch">
+          <input type="checkbox" id="remindersOn">
+          <span class="track" aria-hidden="true"></span>
+        </label>
+      </div>
+
+      <div id="remindersBody">
+        <div class="notice" id="pushNotice" hidden></div>
+        <ul class="reminder-list" id="reminderList"></ul>
+        <button class="ghost" type="button" id="addReminder"></button>
+        <button class="ghost" type="button" id="exportIcs"></button>
+        <p class="fine" id="hintIcs"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h3 id="lblRefill"></h3>
+        <label class="switch">
+          <input type="checkbox" id="refillOn">
+          <span class="track" aria-hidden="true"></span>
+        </label>
+      </div>
+      <div id="refillBody">
+        <label class="field">
+          <span id="lblRefillLeft"></span>
+          <input type="number" id="refillLeft" min="0" max="999" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span id="lblRefillWarn"></span>
+          <input type="number" id="refillWarn" min="0" max="99" inputmode="numeric">
+        </label>
+        <button class="ghost" type="button" id="refillReset"></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 id="lblBackup"></h3>
+      <p class="fine" id="hintBackup"></p>
+      <button class="ghost" type="button" id="backupBtn"></button>
+      <button class="ghost" type="button" id="restoreBtn"></button>
+      <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    </div>
+
+    <p class="fine center" id="about"></p>
+  </section>
+
+  <!-- ──────────────────────── TAB BAR ──────────────────────── -->
+  <nav class="tabs" id="tabs">
+    <button type="button" data-tab="today"  class="active"><i>🐘</i><span id="tabToday"></span></button>
+    <button type="button" data-tab="history"><i>🗓️</i><span id="tabHistory"></span></button>
+    <button type="button" data-tab="settings"><i>⚙️</i><span id="tabSettings"></span></button>
+  </nav>
+</div>
+
+<!-- ────────────────────── SHEETS / MODALS ────────────────────── -->
+<div class="sheet-backdrop" id="backdrop" hidden></div>
+
+<div class="sheet" id="daySheet" hidden role="dialog" aria-modal="true">
+  <div class="grabber" aria-hidden="true"></div>
+  <h3 id="daySheetTitle"></h3>
+  <p class="fine" id="daySheetStatus"></p>
+  <button class="cta small" type="button" id="dayMark"></button>
+  <button class="ghost" type="button" id="dayUnmark"></button>
+  <button class="ghost quiet" type="button" id="dayClose"></button>
+</div>
+
+<div class="sheet" id="remSheet" hidden role="dialog" aria-modal="true">
+  <div class="grabber" aria-hidden="true"></div>
+  <h3 id="remSheetTitle"></h3>
+  <label class="field">
+    <span id="lblRemTime"></span>
+    <input type="time" id="remTime">
+  </label>
+  <div class="daypick" id="remDays"></div>
+  <p class="fine" id="hintRemDays"></p>
+  <button class="cta small" type="button" id="remSave"></button>
+  <button class="ghost" type="button" id="remDelete"></button>
+  <button class="ghost quiet" type="button" id="remCancel"></button>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

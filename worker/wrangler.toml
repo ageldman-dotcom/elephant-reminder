@@ -1,0 +1,24 @@
+name = "elephant-reminder-push"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Fires once a minute. The worker itself decides which (if any) reminders
+# are due in the subscriber's own timezone.
+[triggers]
+crons = ["* * * * *"]
+
+# Holds one small JSON blob: the reminder schedule, the timezone, and a
+# single "stay quiet until" timestamp. No history is stored here.
+[[kv_namespaces]]
+binding = "SUBS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+VAPID_PUBLIC_KEY = "BOOu8-i86U9eashAbNiGe2NkPABmONeP0sNibQHPb9uUGpq_1NZC2qoY_7JsneYxPCF10v-ZfbjXYk629UBR5iE"
+VAPID_SUBJECT = "https://ageldman-dotcom.github.io/elephant-reminder/"
+
+[observability]
+enabled = true
+
+# VAPID_PRIVATE_JWK is set as a secret, never committed:
+#   npx wrangler secret put VAPID_PRIVATE_JWK

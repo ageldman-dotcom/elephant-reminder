@@ -1,0 +1,5 @@
+# The VAPID private key lives here and must never be committed.
+secrets/
+node_modules/
+.wrangler/
+*.log

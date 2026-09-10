@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="soft">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Set up · The Wife's Elephant Reminder</title>
+<meta name="theme-color" content="#FBF6F1">
+<meta name="color-scheme" content="light dark">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .page { max-width: 520px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 20px 60px; }
+  .page h1 { font-family: var(--font-display); font-weight: var(--display-weight); font-size: 1.6rem; text-align: center; margin: 6px 0 4px; }
+  .page .sub { text-align: center; color: var(--ink-soft); margin: 0 0 26px; font-size: .95rem; }
+  ol { counter-reset: step; list-style: none; padding: 0; margin: 0; }
+  ol li {
+    counter-increment: step;
+    position: relative;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 18px 18px 62px;
+    margin-bottom: 12px; font-size: .97rem; line-height: 1.5;
+  }
+  [dir="rtl"] ol li { padding: 18px 62px 18px 18px; }
+  ol li::before {
+    content: counter(step);
+    position: absolute; inset-inline-start: 18px; top: 17px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink);
+    font-weight: 700; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol li b { color: var(--ink); }
+  .warn-box {
+    background: var(--bg-2); border: 1px dashed var(--line);
+    border-radius: var(--radius-sm); padding: 14px 16px;
+    font-size: .89rem; color: var(--ink-soft); margin-bottom: 22px;
+  }
+  .share-icon { display: inline-block; vertical-align: -4px; margin: 0 2px; }
+  .open-app {
+    display: block; text-align: center; text-decoration: none;
+    margin-top: 26px; padding: 18px; border-radius: var(--radius);
+    background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1.08rem;
+  }
+  .langbar { display: flex; gap: 6px; padding: 4px; background: var(--bg-2); border-radius: var(--radius-sm); margin-bottom: 20px; }
+  .langbar button { flex: 1; padding: 10px; border-radius: calc(var(--radius-sm) - 4px); font-weight: 600; font-size: .9rem; color: var(--ink-soft); }
+  .langbar button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+  .fine.center { text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <svg class="eleph" viewBox="0 0 220 200" role="img" aria-label="Elephant" style="--el-size:170px">
+    <g class="ear-l">
+      <ellipse class="ear" cx="54" cy="86" rx="37" ry="45" transform="rotate(-14 54 86)"/>
+      <ellipse class="ear-in" cx="58" cy="88" rx="22" ry="29" transform="rotate(-14 58 88)"/>
+    </g>
+    <g class="ear-r">
+      <ellipse class="ear" cx="166" cy="86" rx="37" ry="45" transform="rotate(14 166 86)"/>
+      <ellipse class="ear-in" cx="162" cy="88" rx="22" ry="29" transform="rotate(14 162 88)"/>
+    </g>
+    <g class="hair"><path d="M102 46 Q106 32 112 45"/><path d="M114 44 Q121 31 125 45"/></g>
+    <ellipse class="head" cx="110" cy="92" rx="50" ry="47"/>
+    <g><path class="trunk" d="M110 100 C103 138 113 162 135 155 C149 150 150 136 140 133"/></g>
+    <g class="eyes-happy"><path d="M83 89 Q92 77 101 89"/><path d="M120 89 Q129 77 138 89"/></g>
+    <ellipse class="blush" cx="77" cy="105" rx="9" ry="6"/>
+    <ellipse class="blush" cx="144" cy="105" rx="9" ry="6"/>
+  </svg>
+
+  <div class="langbar" role="group">
+    <button type="button" data-lang="en" aria-pressed="true">English</button>
+    <button type="button" data-lang="he" aria-pressed="false">עברית</button>
+  </div>
+
+  <!-- ───────── English ───────── -->
+  <div data-pane="en">
+    <h1>The Wife's Elephant Reminder</h1>
+    <p class="sub">An elephant never forgets — and now, neither will you.</p>
+
+    <div class="warn-box">
+      <b>Please open this page in Safari.</b> Chrome and other browsers cannot add apps
+      to the Home Screen on iPhone, and reminders will not work from them.
+    </div>
+
+    <ol>
+      <li>Tap the <b>Share</b> button at the bottom of Safari — the square with an arrow pointing up
+        <svg class="share-icon" width="17" height="20" viewBox="0 0 17 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 13V2"/><path d="M5 5.2 8.5 1.7 12 5.2"/><path d="M4 8H2.5v10h12V8H13"/></svg>
+      </li>
+      <li>Scroll down the list and tap <b>Add to Home Screen</b>.</li>
+      <li>Tap <b>Add</b> in the top corner. A little elephant now lives on your Home Screen.</li>
+      <li><b>Open the app from that new icon</b>, not from Safari. This matters — reminders only work from the Home Screen icon.</li>
+      <li>Inside the app, go to <b>Settings → Reminders</b>, switch them on, and tap <b>Allow</b> when iPhone asks about notifications.</li>
+      <li>Set the times you want. Reminders will reach your iPhone <b>and your Apple Watch</b>, and they stop for the day the moment you mark the pill as taken.</li>
+    </ol>
+
+    <a class="open-app" href="index.html">Open the app →</a>
+    <p class="fine center">Everything you mark stays on your phone. Nobody else can see it.</p>
+  </div>
+
+  <!-- ───────── עברית ───────── -->
+  <div data-pane="he" hidden>
+    <h1>תזכורת הפיל של אשתי</h1>
+    <p class="sub">פיל לעולם לא שוכח — ומעכשיו גם את לא.</p>
+
+    <div class="warn-box">
+      <b>חשוב לפתוח את הדף הזה בספארי (Safari).</b> דפדפנים אחרים לא יכולים להוסיף אפליקציות
+      למסך הבית באייפון, והתזכורות לא יעבדו דרכם.
+    </div>
+
+    <ol>
+      <li>לחצי על כפתור <b>השיתוף</b> בתחתית ספארי — הריבוע עם החץ כלפי מעלה
+        <svg class="share-icon" width="17" height="20" viewBox="0 0 17 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 13V2"/><path d="M5 5.2 8.5 1.7 12 5.2"/><path d="M4 8H2.5v10h12V8H13"/></svg>
+      </li>
+      <li>גללי ברשימה ולחצי על <b>הוספה למסך הבית</b>.</li>
+      <li>לחצי על <b>הוספה</b> בפינה העליונה. מעכשיו יש פיל קטן על מסך הבית שלך.</li>
+      <li><b>פתחי את האפליקציה מהאייקון החדש</b>, לא מספארי. זה חשוב — התזכורות עובדות רק מהאייקון שבמסך הבית.</li>
+      <li>בתוך האפליקציה: <b>הגדרות ← תזכורות</b>, הפעילי אותן, ולחצי <b>אישור</b> כשהאייפון ישאל על התראות.</li>
+      <li>בחרי את השעות שמתאימות לך. התזכורות יגיעו לאייפון <b>וגם לשעון</b>, וייפסקו לאותו יום ברגע שתסמני שלקחת.</li>
+    </ol>
+
+    <a class="open-app" href="index.html">לפתיחת האפליקציה ←</a>
+    <p class="fine center">כל מה שאת מסמנת נשאר בטלפון שלך. אף אחד אחר לא רואה את זה.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.langbar button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var lang = b.dataset.lang;
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+      document.querySelectorAll('.langbar button').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x.dataset.lang === lang));
+      });
+      document.querySelectorAll('[data-pane]').forEach(function (p) {
+        p.hidden = p.dataset.pane !== lang;
+      });
+    });
+  });
+
+  // Open in the reader's own language on first arrival.
+  if ((navigator.language || '').toLowerCase().indexOf('he') === 0) {
+    document.querySelector('.langbar button[data-lang="he"]').click();
+  }
+
+  // If she already installed it and opened this from the Home Screen, don't
+  // make her read instructions she has already followed.
+  if (window.navigator.standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches) {
+    location.replace('index.html');
+  }
+</script>
+</body>
+</html>
