@@ -11,7 +11,7 @@ crons = ["* * * * *"]
 # single "stay quiet until" timestamp. No history is stored here.
 [[kv_namespaces]]
 binding = "SUBS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "c1aec739ca934432a57b277ca352d765"
 
 [vars]
 VAPID_PUBLIC_KEY = "BOOu8-i86U9eashAbNiGe2NkPABmONeP0sNibQHPb9uUGpq_1NZC2qoY_7JsneYxPCF10v-ZfbjXYk629UBR5iE"

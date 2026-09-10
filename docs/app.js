@@ -13,7 +13,7 @@
    fallback (which needs no server at all) fully working.
    --------------------------------------------------------------- */
 const CONFIG = {
-  WORKER_URL: '',
+  WORKER_URL: 'https://elephant-reminder-push.ageldman.workers.dev',
   VAPID_PUBLIC_KEY: 'BOOu8-i86U9eashAbNiGe2NkPABmONeP0sNibQHPb9uUGpq_1NZC2qoY_7JsneYxPCF10v-ZfbjXYk629UBR5iE'
 };
 

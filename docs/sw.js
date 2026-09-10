@@ -8,7 +8,7 @@
 'use strict';
 
 // Bump this string whenever the app files change, so phones pick up the new version.
-const CACHE = 'elephant-v1';
+const CACHE = 'elephant-v2';
 
 const SHELL = [
   './',
