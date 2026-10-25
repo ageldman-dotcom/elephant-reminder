@@ -79,10 +79,24 @@ marked later, dashed means not marked. Tap any past day to backfill it;
 backfilled days are recorded as `late: true` so the record stays honest. Stats:
 taken this month, best streak, adherence percentage. CSV export for a doctor.
 
-**Reminders.** Fully her control: any number per day, any times, per-day-of-week
-schedules, individually editable, all pauseable. They **stop automatically for
-the day the moment she marks the pill taken.** Wording escalates: first is
-gentle, second says it is still pending, third is a last call.
+**Reminders.** Fully her control: any number per day, any times, individually
+editable, all pauseable. Each reminder is either **weekly** (chosen weekdays) or
+a **one-off on a date**, and each can **repeat every N minutes, up to N more
+times**, until she marks it taken. They **all stop for the day the moment she
+marks the pill taken** — there is one "taken" per day, so it does not matter
+which reminder prompted her. Wording escalates by how many have already been
+sent that day: gentle, then still pending, then last call.
+
+**"Remind me again" (second timer, added 2026-10-25 at Noa's request).** A
+button on the Today screen, under "I took it", for when the 14:00 notification
+arrives at a bad moment. Quick picks +30 min / +1 hour / +2 hours or any time;
+it creates a one-off reminder for today. It can also be preset in Settings in
+the morning for any later time. Once set, the button reads "Extra reminder at
+HH:MM · change". Finished one-offs delete themselves.
+
+**Not possible on iPhone:** custom volume or sound, and buttons on the
+notification. Web apps get the system sound at the phone's volume (on/off only,
+in iPhone Settings → Notifications → Elephant). The editor says so.
 
 **Refill tracking.** Counts down pills remaining, warns at a threshold she sets,
 "I opened a new pack" resets it.
@@ -208,11 +222,22 @@ A future assistant should know these happened, because two of them fail silently
    connected yet" and it would have persisted after push went live, because the
    service worker was cache-first. Changed to network-first (3s timeout, cache
    fallback) for HTML/JS/CSS so an untrue message can never stick.
-5. **The workers.dev subdomain name was chosen without asking.** Cloudflare's
+5. **Hebrew weekday picker showed "י" on every button** (found 2026-10-25). The
+   code sliced the first two characters of the short weekday name, and every
+   Hebrew short name starts "יום". Shipped that way on day one and nobody
+   noticed. Fixed with the narrow form (א׳ … ש׳).
+6. **The workers.dev subdomain name was chosen without asking.** Cloudflare's
    dashboard links were 404ing, so `ageldman` was registered via API to stop the
    back-and-forth. The owner was told and offered a change.
 
 ## 9. Known open items
+
+- **2026-10-25 second-timer release is NOT LIVE yet** — committed locally only.
+  Blocked on an expired wrangler login (`npx wrangler login` interactively).
+  Deploy order matters: **worker first**, then push the app. The old worker
+  strips `date`/`repeatEvery`/`repeatCount`, so a one-off set against it would
+  silently never fire. Then send Noa the announcement (wording pending Avi's
+  confirmation) with tag `news`.
 
 - Confirm with Noa that the test notification actually appeared on her phone
   **and her Apple Watch**.
@@ -229,7 +254,7 @@ Read `README.md` first — it is the runbook.
 The two things most easily got wrong:
 
 - **After editing anything in `docs/`, bump `CACHE` in `docs/sw.js`**
-  (`elephant-v3` to `elephant-v4`). Otherwise phones keep serving the old version.
+  (currently `elephant-v4`; next is `elephant-v5`). Otherwise phones keep serving the old version.
 - **Never commit `secrets/`.**
 
 ```bash
@@ -270,3 +295,30 @@ Newest entries at the bottom. One entry per working session.
 - Sent her a bilingual "reminders are live" push — accepted, HTTP 201.
 - Created this log file at the owner's request, with a standing instruction to
   update it after every future session.
+
+### 2026-10-25 — Second timer ("Remind me again")
+
+- Noa asked for a second, independent reminder she controls fully, for when
+  the 14:00 one arrives at a bad moment, also presettable earlier in the day.
+  Both must stop once she marks the pill taken.
+- Clarified with Avi: "how many times" means **repeat every N min until taken**;
+  it lives on the **Today screen and in Settings**; the existing 14:00 reminder
+  gets **the same options**. Told him volume and notification buttons are not
+  possible for iPhone web apps.
+- Reminder items gained `date` (one-off), `repeatEvery`, `repeatCount`; old
+  saved items are normalised on load. Worker: new `dueFires()` handles dates,
+  repeats and repeats past midnight; dedupe keys are now
+  `<id>#<repeat>#<calendar date>` with old-format entries pruned; same-minute
+  reminders collapse into one push; escalation counts pushes sent today.
+- `.ics` export handles one-offs and adds an alarm per repeat.
+- Service worker honours a `tag` in the push payload; `tools/send-push.mjs`
+  takes an optional third argument for it, so announcements do not replace
+  reminders. Badge only set by real reminders. `CACHE` → `elephant-v4`.
+- Fixed the Hebrew weekday picker (see section 8).
+- Verified: 13 worker scheduling checks in a fake KV (old-format 14:00 fires
+  once, one-offs only on their date, taken silences both including one set
+  before 14:00, repeats and stopping, catch-up, same-minute merge, past
+  midnight, weekday skip, disabled, input sanitising); browser test at 390px in
+  Hebrew of the Today button, quick sheet and full editor, no horizontal
+  overflow. Not verified on her phone yet.
+- **Not deployed** — see section 9.

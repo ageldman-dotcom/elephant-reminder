@@ -8,7 +8,7 @@
 'use strict';
 
 // Bump this string whenever the app files change, so phones pick up the new version.
-const CACHE = 'elephant-v3';
+const CACHE = 'elephant-v4';
 
 const SHELL = [
   './',
@@ -95,17 +95,22 @@ self.addEventListener('push', (event) => {
 
   const title = data.title || '🐘 Time for your pill';
   const body  = data.body  || '';
+  // Reminders share one tag so a newer one replaces the last; a one-off
+  // announcement brings its own tag so it neither replaces nor is replaced.
+  const tag = data.tag || 'pill-reminder';
 
   event.waitUntil((async () => {
     await self.registration.showNotification(title, {
       body,
       icon: './icons/icon-192.png',
       badge: './icons/icon-192.png',
-      tag: 'pill-reminder',      // replaces the previous one instead of stacking up
+      tag,
       renotify: true,
       data: { url: './index.html' }
     });
-    try { if ('setAppBadge' in self.navigator) await self.navigator.setAppBadge(1); } catch (e) {}
+    if (tag === 'pill-reminder') {
+      try { if ('setAppBadge' in self.navigator) await self.navigator.setAppBadge(1); } catch (e) {}
+    }
   })());
 });
 

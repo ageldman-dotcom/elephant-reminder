@@ -429,6 +429,8 @@ button { font-family: inherit; font-size: inherit; letter-spacing: inherit; curs
 }
 .field input[type="number"] { max-width: 96px; }
 .field input[type="time"] { max-width: 140px; }
+.field input[type="date"] { max-width: 170px; }
+.field select#remRepeat, .field select#remCount { max-width: 150px; }
 
 .fine { font-size: .8rem; color: var(--ink-soft); line-height: 1.5; margin: 8px 0 0; }
 .fine.center { text-align: center; margin: 26px 0 10px; }
@@ -512,11 +514,21 @@ button { font-family: inherit; font-size: inherit; letter-spacing: inherit; curs
   background: var(--bg);
   border-radius: var(--radius) var(--radius) 0 0;
   padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  max-height: 92vh; overflow-y: auto; overscroll-behavior: contain;
   animation: rise .26s cubic-bezier(.2,.8,.3,1);
 }
 @keyframes rise { from { transform: translateY(100%); } to { transform: none; } }
 .grabber { width: 40px; height: 5px; border-radius: 999px; background: var(--line); margin: 0 auto 14px; }
 .sheet h3 { font-family: var(--font-display); font-weight: var(--display-weight); font-size: 1.25rem; text-transform: none; letter-spacing: 0; color: var(--ink); margin-bottom: 6px; }
+
+.chips { display: flex; gap: 8px; margin: 12px 0 14px; }
+.chips button {
+  flex: 1; padding: 12px 6px; border-radius: var(--radius-sm);
+  background: var(--bg-2); border: 1px solid var(--line);
+  font-size: .9rem; font-weight: 700; color: var(--ink);
+}
+.chips button:active { background: var(--accent); color: var(--accent-ink); }
+#remKind { margin: 12px 0 4px; }
 
 .daypick { display: flex; gap: 6px; margin: 14px 0 4px; }
 .daypick button {

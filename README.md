@@ -59,8 +59,19 @@ secrets/                  gitignored — the VAPID private key
 The worker stores **only** the schedule, the timezone, and that one timestamp.
 No history, no name, no record of which past days were taken.
 
-Reminder text escalates through the day: first is gentle, second says it is still
-pending, third is a last call.
+Each reminder is weekly (chosen weekdays) or a one-off on a date, and can repeat
+every N minutes up to N more times. Marking the pill taken silences all of them
+until the day rolls over. The Today screen's "Remind me again" button makes a
+one-off for later today.
+
+Reminder text escalates by how many have been sent that day: first is gentle,
+second says it is still pending, third is a last call.
+
+**Deploy the worker before the app** whenever the reminder shape changes — the
+worker discards fields it does not know, so the app must never be ahead of it.
+
+To send an announcement that does not replace a reminder:
+`node tools/send-push.mjs "Title" "Body" news`
 
 ---
 
@@ -76,7 +87,7 @@ git add -A && git commit -m "..." && git push
 ```
 
 After changing any file in `docs/`, bump `CACHE` in `docs/sw.js`
-(`elephant-v1` → `elephant-v2`) so phones pick up the new version instead of
+(currently `elephant-v4`) so phones pick up the new version instead of
 serving the cached one.
 
 ### The worker

@@ -75,6 +75,13 @@ const STRINGS = {
     remNewTitle: 'New reminder', remEditTitle: 'Edit reminder',
     lblRemTime: 'Time', hintRemDays: 'Tap the days this reminder should repeat on. Turn all of them off to pause it.',
     remSave: 'Save', remDelete: 'Delete this reminder', remCancel: 'Cancel',
+    kindWeekly: 'Every week', kindOnce: 'One date', lblRemDate: 'Date',
+    lblRepeat: 'If not marked, remind again', repeatNone: 'No', repeatEvery: 'Every {n} min',
+    lblRepeatCount: 'How many more times',
+    repeatDesc: 'again every {n} min ×{c}',
+    hintSound: 'Sound and volume follow your iPhone: Settings → Notifications → Elephant. Every reminder stops the moment you mark the pill taken.',
+    remindAgain: 'Remind me again later', againAt: 'Extra reminder at {time} · change',
+    quickTitle: 'Remind me again', in30: '+30 min', in60: '+1 hour', in120: '+2 hours',
 
     lblRefill: 'Refill tracking',
     lblRefillLeft: 'Pills left', lblRefillWarn: 'Warn me at',
@@ -147,6 +154,13 @@ const STRINGS = {
     remNewTitle: 'תזכורת חדשה', remEditTitle: 'עריכת תזכורת',
     lblRemTime: 'שעה', hintRemDays: 'סמני את הימים שבהם התזכורת תחזור. כיבוי כל הימים משהה אותה.',
     remSave: 'שמירה', remDelete: 'מחיקת התזכורת', remCancel: 'ביטול',
+    kindWeekly: 'כל שבוע', kindOnce: 'תאריך אחד', lblRemDate: 'תאריך',
+    lblRepeat: 'אם לא סימנתי, להזכיר שוב', repeatNone: 'לא', repeatEvery: 'כל {n} דק׳',
+    lblRepeatCount: 'כמה פעמים נוספות',
+    repeatDesc: 'שוב כל {n} דק׳ ×{c}',
+    hintSound: 'הצליל והעוצמה נקבעים באייפון: הגדרות → התראות → Elephant. כל התזכורות נפסקות ברגע שתסמני שלקחת.',
+    remindAgain: 'להזכיר לי שוב מאוחר יותר', againAt: 'תזכורת נוספת ב-{time} · שינוי',
+    quickTitle: 'להזכיר לי שוב', in30: '+30 דק׳', in60: '+שעה', in120: '+שעתיים',
 
     lblRefill: 'מעקב מלאי',
     lblRefillLeft: 'כדורים שנשארו', lblRefillWarn: 'להתריע כשנשארו',
@@ -181,7 +195,7 @@ const DEFAULTS = () => ({
     pillName: '',
     reminders: {
       enabled: false,
-      items: [{ id: rid(), time: '09:00', days: [0, 1, 2, 3, 4, 5, 6] }]
+      items: [normItem({ id: rid(), time: '09:00', days: [0, 1, 2, 3, 4, 5, 6] })]
     },
     refill: { enabled: false, left: 28, packSize: 28, warnAt: 5, lastDay: null }
   },
@@ -197,6 +211,21 @@ let editingReminder = null;
 
 function rid() { return Math.random().toString(36).slice(2, 10); }
 
+/** A reminder is either weekly (`days`) or one-off (`date`, a calendar
+ *  date). Either kind can repeat every `repeatEvery` minutes, `repeatCount`
+ *  more times, until she marks the pill taken. Older saved reminders have
+ *  only id/time/days, so fill in the rest. */
+function normItem(it) {
+  return {
+    id: it.id || rid(),
+    time: it.time || '09:00',
+    days: Array.isArray(it.days) ? it.days : [],
+    date: it.date || null,
+    repeatEvery: Number(it.repeatEvery) || 0,
+    repeatCount: Number(it.repeatCount) || 0
+  };
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
@@ -208,7 +237,7 @@ function load() {
       ...base, ...parsed,
       settings: {
         ...base.settings, ...(parsed.settings || {}),
-        reminders: { ...base.settings.reminders, ...((parsed.settings || {}).reminders || {}) },
+        reminders: normReminders({ ...base.settings.reminders, ...((parsed.settings || {}).reminders || {}) }),
         refill: { ...base.settings.refill, ...((parsed.settings || {}).refill || {}) }
       },
       log: parsed.log || {},
@@ -218,6 +247,10 @@ function load() {
     console.warn('Could not read saved data, starting fresh.', e);
     return DEFAULTS();
   }
+}
+
+function normReminders(r) {
+  return { ...r, items: (Array.isArray(r.items) ? r.items : []).map(normItem) };
 }
 
 function save() {
@@ -249,6 +282,53 @@ function nextRollover() {
   r.setHours(S.settings.rolloverHour, 0, 0, 0);
   if (r <= now) r.setDate(r.getDate() + 1);
   return r;
+}
+
+/** Every moment a reminder fires on one calendar day: its time, then each repeat. */
+function firesOn(it, day) {
+  const applies = it.date ? it.date === keyFromDate(day) : it.days.includes(day.getDay());
+  if (!applies) return [];
+  const [h, m] = it.time.split(':').map(Number);
+  const count = it.repeatEvery > 0 ? it.repeatCount : 0;
+  const out = [];
+  for (let k = 0; k <= count; k++) {
+    const when = new Date(day); when.setHours(h, m + k * it.repeatEvery, 0, 0);
+    out.push(when);
+  }
+  return out;
+}
+
+/** Fires still to come today (repeats may run past midnight, so yesterday counts too). */
+function upcomingFires(items) {
+  const now = new Date();
+  const end = nextRollover();
+  const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+  return items
+    .flatMap((it) => [...firesOn(it, yesterday), ...firesOn(it, now)])
+    .filter((when) => when > now && when <= end)
+    .sort((a, b) => a - b);
+}
+
+/** One-off reminders whose last repeat is over are dropped. Returns true if any were. */
+function pruneReminders() {
+  const r = S.settings.reminders;
+  const cutoff = Date.now() - 10 * 60000;
+  const keep = r.items.filter((it) => {
+    if (!it.date) return true;
+    const fires = firesOn(it, new Date(it.date + 'T12:00:00'));
+    return fires.length && fires[fires.length - 1].getTime() > cutoff;
+  });
+  if (keep.length === r.items.length) return false;
+  r.items = keep;
+  return true;
+}
+
+/** Today's one-off reminder that has not fired yet — what the Today button edits. */
+function todaysExtra() {
+  const now = new Date();
+  const today = keyFromDate(now);
+  return S.settings.reminders.items.find((it) =>
+    it.date === today && firesOn(it, now).some((w) => w > now)) || null;
 }
 
 function T() { return STRINGS[S.settings.lang] || STRINGS.en; }
@@ -342,6 +422,10 @@ function renderToday() {
   $('undoText').textContent = t('undoText');
   $('undoBtn').textContent = t('undoBtn');
 
+  const extra = todaysExtra();
+  $('againBtn').hidden = taken || !S.settings.reminders.enabled;
+  $('againBtn').textContent = extra ? t('againAt', { time: extra.time }) : t('remindAgain');
+
   renderStreak();
   renderNextReminder();
   renderRefillHint();
@@ -375,16 +459,7 @@ function renderNextReminder() {
   const r = S.settings.reminders;
   if (!r.enabled || !r.items.length) { el.textContent = t('noReminders'); return; }
 
-  const now = new Date();
-  const upcoming = r.items
-    .filter((it) => it.days.includes(now.getDay()))
-    .map((it) => {
-      const [h, m] = it.time.split(':').map(Number);
-      const when = new Date(now); when.setHours(h, m, 0, 0);
-      return when;
-    })
-    .filter((when) => when > now)
-    .sort((a, b) => a - b);
+  const upcoming = upcomingFires(r.items);
 
   if (isTaken(dayKeyOf())) el.textContent = t('remindersOffToday');
   else if (upcoming.length) el.textContent = t('nextReminder', { time: fmtTime(upcoming[0]) });
@@ -590,12 +665,21 @@ function describeDays(days) {
   return days.slice().sort().map((d) => names[d]).join(', ');
 }
 
+function describeItem(it) {
+  const when = it.date
+    ? new Date(it.date + 'T12:00:00').toLocaleDateString(T().locale, { weekday: 'short', day: 'numeric', month: 'short' })
+    : describeDays(it.days);
+  return it.repeatEvery > 0 && it.repeatCount > 0
+    ? `${when} · ${t('repeatDesc', { n: it.repeatEvery, c: it.repeatCount })}`
+    : when;
+}
+
 function renderReminderList() {
   const ul = $('reminderList');
   ul.innerHTML = '';
   for (const it of S.settings.reminders.items) {
     const li = document.createElement('li');
-    if (!it.days.length) li.classList.add('off');
+    if (!it.date && !it.days.length) li.classList.add('off');
 
     const time = document.createElement('span');
     time.className = 'time';
@@ -603,7 +687,7 @@ function renderReminderList() {
 
     const days = document.createElement('span');
     days.className = 'days';
-    days.textContent = describeDays(it.days);
+    days.textContent = describeItem(it);
 
     const edit = document.createElement('button');
     edit.type = 'button';
@@ -632,17 +716,39 @@ function renderPushNotice() {
 /* ---------------------------------------------------------------
    Reminder edit sheet
    --------------------------------------------------------------- */
-function openReminderSheet(item) {
-  editingReminder = item || { id: rid(), time: '09:00', days: [0, 1, 2, 3, 4, 5, 6], isNew: true };
+const REPEAT_CHOICES = [0, 10, 15, 20, 30, 45, 60];
 
-  $('remSheetTitle').textContent = t(editingReminder.isNew ? 'remNewTitle' : 'remEditTitle');
+/** `quick` is the Today-screen version: a one-off for later today, with
+ *  +30 / +1h / +2h shortcuts. Otherwise it is the full editor from Settings. */
+function openReminderSheet(item, quick) {
+  editingReminder = item
+    ? { ...item }
+    : quick
+      ? { ...normItem(laterBy(60)), isNew: true }
+      : { ...normItem({ time: '09:00', days: [0, 1, 2, 3, 4, 5, 6] }), isNew: true };
+  const ed = editingReminder;
+
+  $('remSheetTitle').textContent = quick ? t('quickTitle') : t(ed.isNew ? 'remNewTitle' : 'remEditTitle');
   $('lblRemTime').textContent = t('lblRemTime');
+  $('lblRemDate').textContent = t('lblRemDate');
   $('hintRemDays').textContent = t('hintRemDays');
+  $('lblRepeat').textContent = t('lblRepeat');
+  $('lblRepeatCount').textContent = t('lblRepeatCount');
+  $('hintSound').textContent = t('hintSound');
   $('remSave').textContent = t('remSave');
   $('remDelete').textContent = t('remDelete');
   $('remCancel').textContent = t('remCancel');
-  $('remDelete').hidden = !!editingReminder.isNew;
-  $('remTime').value = editingReminder.time;
+  $('remDelete').hidden = !!ed.isNew;
+
+  $('remQuick').hidden = !quick;
+  for (const b of document.querySelectorAll('#remQuick button')) b.textContent = t('in' + b.dataset.add);
+
+  document.querySelector('[data-kind="weekly"]').textContent = t('kindWeekly');
+  document.querySelector('[data-kind="once"]').textContent = t('kindOnce');
+  setKind(ed.date ? 'once' : 'weekly');
+
+  $('remTime').value = ed.time;
+  $('remDate').value = ed.date || keyFromDate(new Date());
 
   const wrap = $('remDays');
   wrap.innerHTML = '';
@@ -650,8 +756,11 @@ function openReminderSheet(item) {
   for (let i = 0; i < 7; i++) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = names[i].slice(0, 2);
-    b.setAttribute('aria-pressed', String(editingReminder.days.includes(i)));
+    // Hebrew short names all start "יום", so use the narrow form (א׳, ב׳ …) there.
+    b.textContent = S.settings.lang === 'he'
+      ? new Date(2024, 8, 1 + i).toLocaleDateString('he-IL', { weekday: 'narrow' })
+      : names[i].slice(0, 2);
+    b.setAttribute('aria-pressed', String(ed.days.includes(i)));
     b.addEventListener('click', () => {
       const on = b.getAttribute('aria-pressed') === 'true';
       b.setAttribute('aria-pressed', String(!on));
@@ -659,20 +768,63 @@ function openReminderSheet(item) {
     wrap.appendChild(b);
   }
 
+  const rep = $('remRepeat');
+  rep.innerHTML = '';
+  for (const n of REPEAT_CHOICES) {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n ? t('repeatEvery', { n }) : t('repeatNone');
+    rep.appendChild(o);
+  }
+  rep.value = String(REPEAT_CHOICES.includes(ed.repeatEvery) ? ed.repeatEvery : 0);
+
+  const cnt = $('remCount');
+  if (!cnt.options.length) {
+    for (let n = 1; n <= 5; n++) {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      cnt.appendChild(o);
+    }
+  }
+  cnt.value = String(Math.min(5, Math.max(1, ed.repeatCount || 2)));
+  $('remCountRow').hidden = rep.value === '0';
+
   openSheet('remSheet');
 }
 
+/** A moment `mins` from now, as a one-off reminder (it may land after midnight). */
+function laterBy(mins) {
+  const when = new Date(Date.now() + mins * 60000);
+  return { date: keyFromDate(when), time: `${pad(when.getHours())}:${pad(when.getMinutes())}`, days: [] };
+}
+
+function setKind(kind) {
+  for (const b of document.querySelectorAll('[data-kind]'))
+    b.setAttribute('aria-pressed', String(b.dataset.kind === kind));
+  $('remDateRow').hidden = kind !== 'once';
+  $('remDaysWrap').hidden = kind === 'once';
+}
+
 function saveReminderSheet() {
+  const once = document.querySelector('[data-kind="once"]').getAttribute('aria-pressed') === 'true';
   const days = [];
   document.querySelectorAll('#remDays button').forEach((b, i) => {
     if (b.getAttribute('aria-pressed') === 'true') days.push(i);
   });
+  const repeatEvery = Number($('remRepeat').value) || 0;
 
-  const item = { id: editingReminder.id, time: $('remTime').value || '09:00', days };
+  const item = normItem({
+    id: editingReminder.id,
+    time: $('remTime').value || '09:00',
+    days: once ? [] : days,
+    date: once ? ($('remDate').value || keyFromDate(new Date())) : null,
+    repeatEvery,
+    repeatCount: repeatEvery ? Number($('remCount').value) || 1 : 0
+  });
   const items = S.settings.reminders.items;
   const idx = items.findIndex((x) => x.id === item.id);
   if (idx >= 0) items[idx] = item; else items.push(item);
-  items.sort((a, b) => a.time.localeCompare(b.time));
+  // Weekly reminders first, then one-offs by date; each group by time.
+  items.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.time.localeCompare(b.time));
 
   save();
   syncPush();
@@ -819,10 +971,15 @@ function buildIcs() {
 
   const start = new Date();
   for (const it of S.settings.reminders.items) {
-    if (!it.days.length) continue;
+    if (!it.date && !it.days.length) continue;
     const [h, m] = it.time.split(':').map(Number);
-    const dt = new Date(start);
+    const dt = it.date ? new Date(it.date + 'T12:00:00') : new Date(start);
     dt.setHours(h, m, 0, 0);
+    const alarms = ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'TRIGGER:PT0S', 'END:VALARM'];
+    if (it.repeatEvery > 0) for (let k = 1; k <= it.repeatCount; k++) {
+      alarms.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${title}`,
+        `TRIGGER:PT${k * it.repeatEvery}M`, 'END:VALARM');
+    }
     const local = `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(h)}${pad(m)}00`;
 
     lines.push(
@@ -831,9 +988,9 @@ function buildIcs() {
       `DTSTAMP:${stamp}`,
       `DTSTART:${local}`,
       `DURATION:PT5M`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${it.days.map((d) => ICS_DAYS[d]).join(',')}`,
+      ...(it.date ? [] : [`RRULE:FREQ=WEEKLY;BYDAY=${it.days.map((d) => ICS_DAYS[d]).join(',')}`]),
       `SUMMARY:${title}`,
-      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'TRIGGER:PT0S', 'END:VALARM',
+      ...alarms,
       'END:VEVENT'
     );
   }
@@ -952,6 +1109,17 @@ function wire() {
     renderAll();
   });
   $('addReminder').addEventListener('click', () => openReminderSheet(null));
+  $('againBtn').addEventListener('click', () => openReminderSheet(todaysExtra(), true));
+  document.querySelectorAll('[data-kind]').forEach((b) =>
+    b.addEventListener('click', () => setKind(b.dataset.kind)));
+  document.querySelectorAll('#remQuick button').forEach((b) =>
+    b.addEventListener('click', () => {
+      const at = laterBy(Number(b.dataset.add));
+      setKind('once');
+      $('remDate').value = at.date;
+      $('remTime').value = at.time;
+    }));
+  $('remRepeat').addEventListener('change', (e) => { $('remCountRow').hidden = e.target.value === '0'; });
   $('remSave').addEventListener('click', saveReminderSheet);
   $('remCancel').addEventListener('click', closeSheets);
   $('remDelete').addEventListener('click', () => {
@@ -1001,6 +1169,7 @@ function wire() {
   // The day can roll over while the app sits open in the background.
   let lastKey = dayKeyOf();
   const check = () => {
+    if (pruneReminders()) { save(); syncPush(); renderAll(); }
     const k = dayKeyOf();
     if (k !== lastKey) { lastKey = k; renderAll(); }
     else { renderNextReminder(); }
@@ -1019,6 +1188,7 @@ function boot() {
     save();
   }
 
+  if (pruneReminders()) save();
   wire();
   renderAll();
   showTab('today');

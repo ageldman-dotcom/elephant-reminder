@@ -1,7 +1,10 @@
 // Sends a one-off push to every registered device, bypassing the schedule.
 // Useful for "did this actually reach the phone?" checks.
 //
-//   node tools/send-push.mjs "Title here" "Body here"
+//   node tools/send-push.mjs "Title here" "Body here" [tag]
+//
+// Give an announcement its own tag (e.g. "news") so it does not replace,
+// or get replaced by, a pill reminder. Swiping it away clears it everywhere.
 //
 // Reads the live subscriptions out of Cloudflare KV via wrangler, and signs
 // with the private key in secrets/vapid.json. Nothing is stored or changed.
@@ -13,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 const NS = 'c1aec739ca934432a57b277ca352d765';
 const title = process.argv[2] || '🐘 Test';
 const body  = process.argv[3] || '';
+const tag   = process.argv[4] || undefined;
 
 const enc = new TextEncoder();
 const b64url = (b) => Buffer.from(b).toString('base64')
@@ -73,7 +77,7 @@ if (!ids.length) { console.log('No registered devices — nothing to send to.');
 for (const id of ids) {
   const sub = all[id].subscription;
   if (!sub) { console.log(`${id}: no subscription stored`); continue; }
-  const payload = await encryptPayload(JSON.stringify({ title, body }), sub.keys.p256dh, sub.keys.auth);
+  const payload = await encryptPayload(JSON.stringify({ title, body, tag }), sub.keys.p256dh, sub.keys.auth);
   const res = await fetch(sub.endpoint, {
     method: 'POST',
     headers: {

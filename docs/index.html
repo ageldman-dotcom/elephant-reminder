@@ -94,6 +94,7 @@
 
     <div class="cta-wrap">
       <button class="cta" id="markBtn" type="button"></button>
+      <button class="ghost" id="againBtn" type="button" hidden></button>
       <div class="undo" id="undoBar" hidden>
         <span id="undoText"></span>
         <button type="button" id="undoBtn"></button>
@@ -234,12 +235,36 @@
 <div class="sheet" id="remSheet" hidden role="dialog" aria-modal="true">
   <div class="grabber" aria-hidden="true"></div>
   <h3 id="remSheetTitle"></h3>
+  <div class="chips" id="remQuick" hidden>
+    <button type="button" data-add="30"></button>
+    <button type="button" data-add="60"></button>
+    <button type="button" data-add="120"></button>
+  </div>
+  <div class="seg" id="remKind" role="group">
+    <button type="button" data-kind="weekly"></button>
+    <button type="button" data-kind="once"></button>
+  </div>
   <label class="field">
     <span id="lblRemTime"></span>
     <input type="time" id="remTime">
   </label>
-  <div class="daypick" id="remDays"></div>
-  <p class="fine" id="hintRemDays"></p>
+  <label class="field" id="remDateRow">
+    <span id="lblRemDate"></span>
+    <input type="date" id="remDate">
+  </label>
+  <div id="remDaysWrap">
+    <div class="daypick" id="remDays"></div>
+    <p class="fine" id="hintRemDays"></p>
+  </div>
+  <label class="field">
+    <span id="lblRepeat"></span>
+    <select id="remRepeat"></select>
+  </label>
+  <label class="field" id="remCountRow">
+    <span id="lblRepeatCount"></span>
+    <select id="remCount"></select>
+  </label>
+  <p class="fine" id="hintSound"></p>
   <button class="cta small" type="button" id="remSave"></button>
   <button class="ghost" type="button" id="remDelete"></button>
   <button class="ghost quiet" type="button" id="remCancel"></button>

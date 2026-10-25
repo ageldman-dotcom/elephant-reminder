@@ -177,6 +177,47 @@ const toMinutes = (hhmm) => {
   return (h || 0) * 60 + (m || 0);
 };
 
+const clampInt = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v)) || 0));
+
+/** Dedupe keys for every firing due right now. A reminder fires at its
+ *  time, then again every `repeatEvery` minutes, `repeatCount` more times.
+ *  Repeats can run past midnight, so yesterday's reminders are checked too.
+ *  Key: `<id>#<repeat index>#<calendar date the reminder belongs to>`. */
+export function dueFires(rec, now) {
+  const tz = rec.tz || 'UTC';
+  const nowMin = localParts(tz, now).minutes;
+  const out = [];
+  for (const back of [0, 1]) {
+    const day = localParts(tz, new Date(now.getTime() - back * 86400000));
+    const mins = nowMin + back * 1440;
+    for (const it of rec.items || []) {
+      const applies = it.date
+        ? it.date === day.dayKey
+        : Array.isArray(it.days) && it.days.includes(day.dow);
+      if (!applies) continue;
+      const every = it.repeatEvery > 0 ? it.repeatEvery : 0;
+      const count = every ? (it.repeatCount || 0) : 0;
+      for (let k = 0; k <= count; k++) {
+        const delta = mins - (toMinutes(it.time) + k * every);
+        if (delta >= 0 && delta <= CATCHUP_MINUTES) out.push(`${it.id}#${k}#${day.dayKey}`);
+      }
+    }
+  }
+  return out;
+}
+
+/** Drop dedupe entries older than yesterday (and any in the old format),
+ *  so the map stays small without forgetting anything still due. */
+function pruneSent(rec, tz, now) {
+  const yesterday = localParts(tz, new Date(now.getTime() - 86400000)).dayKey;
+  let changed = false;
+  for (const key of Object.keys(rec.lastSent)) {
+    const date = key.split('#')[2];
+    if (!date || date < yesterday) { delete rec.lastSent[key]; changed = true; }
+  }
+  return changed;
+}
+
 /* ---------------- HTTP API ---------------- */
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -230,10 +271,14 @@ export default {
       if (typeof body.lang === 'string') rec.lang = body.lang === 'he' ? 'he' : 'en';
       if (typeof body.enabled === 'boolean') rec.enabled = body.enabled;
       if (Array.isArray(body.items)) {
-        rec.items = body.items.slice(0, 12).map((it) => ({
+        rec.items = body.items.slice(0, 20).map((it) => ({
           id: String(it.id).slice(0, 32),
           time: /^\d{1,2}:\d{2}$/.test(it.time) ? it.time : '09:00',
-          days: Array.isArray(it.days) ? it.days.filter((d) => d >= 0 && d <= 6) : []
+          days: Array.isArray(it.days) ? it.days.filter((d) => d >= 0 && d <= 6) : [],
+          // A one-off reminder carries a calendar date and ignores `days`.
+          date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : null,
+          repeatEvery: clampInt(it.repeatEvery, 0, 180),
+          repeatCount: clampInt(it.repeatCount, 0, 10)
         }));
       }
       if (typeof body.rolloverHour === 'number') {
@@ -266,45 +311,32 @@ export default {
 
         const tz = rec.tz || 'UTC';
         const rollover = typeof rec.rolloverHour === 'number' ? rec.rolloverHour : 4;
-        const nowParts = localParts(tz, now);
-        // Day key uses the same rollover the app uses, so dedupe lines up
-        // with what she sees on screen.
+        // Day key uses the same rollover the app uses, so the wording
+        // escalation lines up with what she sees on screen.
         const dayKey = localParts(tz, new Date(now.getTime() - rollover * 3600000)).dayKey;
 
-        // She already took it — stay quiet until the day flips.
+        rec.lastSent = rec.lastSent || {};
+        if (pruneSent(rec, tz, now)) dirty = true;
+
+        // She already took it — every reminder, first or second, stays
+        // quiet until the day flips.
         if (rec.suppressUntil && now < new Date(rec.suppressUntil)) continue;
 
-        const todays = rec.items
-          .filter((it) => Array.isArray(it.days) && it.days.includes(nowParts.dow))
-          .sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+        const due = dueFires(rec, now).filter((key) => !(key in rec.lastSent));
+        if (!due.length) continue;
 
-        for (let i = 0; i < todays.length; i++) {
-          const it = todays[i];
-          const due = toMinutes(it.time);
-          const delta = nowParts.minutes - due;
-          if (delta < 0 || delta > CATCHUP_MINUTES) continue;
+        // Two reminders landing on the same minute become one notification.
+        const sentToday = Object.values(rec.lastSent).filter((v) => v === dayKey).length;
+        const copy = (COPY[rec.lang] || COPY.en)[Math.min(sentToday, 2)];
+        const result = await sendPush(rec.subscription, copy, env);
 
-          const stamp = `${dayKey}#${it.id}`;
-          if (rec.lastSent && rec.lastSent[it.id] === stamp) continue;
-
-          const copy = (COPY[rec.lang] || COPY.en)[Math.min(i, 2)];
-          const result = await sendPush(rec.subscription, copy, env);
-
-          if (result === 'gone') {
-            delete all[subId];
-            dirty = true;
-            break;
-          }
-          if (result === 'ok') {
-            rec.lastSent = rec.lastSent || {};
-            rec.lastSent[it.id] = stamp;
-            dirty = true;
-          }
+        if (result === 'gone') {
+          delete all[subId];
+          dirty = true;
+          continue;
         }
-
-        // Keep the dedupe map from growing without bound.
-        if (rec.lastSent && Object.keys(rec.lastSent).length > 40) {
-          rec.lastSent = {};
+        if (result === 'ok') {
+          for (const key of due) rec.lastSent[key] = dayKey;
           dirty = true;
         }
       } catch (e) {
