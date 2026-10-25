@@ -32,6 +32,7 @@ to terminate it. Treat anything that could take it offline as high-stakes.
 | Push scheduler | live | https://elephant-reminder-push.ageldman.workers.dev |
 | Noa's device | registered | Apple push endpoint, Hebrew UI, Asia/Jerusalem |
 | Her reminder | set by her | 14:00 daily, all 7 days |
+| Second timer ("Remind me again") | live since 2026-10-25 | Today screen + Settings; announced to her by push, awaiting her confirmation |
 
 Noa installed it, switched the app to Hebrew, and set her own reminder without
 instructions. A test push was delivered to her phone on 2026-09-10 (HTTP 201).
