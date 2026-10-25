@@ -232,12 +232,10 @@ A future assistant should know these happened, because two of them fail silently
 
 ## 9. Known open items
 
-- **2026-10-25 second-timer release is NOT LIVE yet** — committed locally only.
-  Blocked on an expired wrangler login (`npx wrangler login` interactively).
-  Deploy order matters: **worker first**, then push the app. The old worker
-  strips `date`/`repeatEvery`/`repeatCount`, so a one-off set against it would
-  silently never fire. Then send Noa the announcement (wording pending Avi's
-  confirmation) with tag `news`.
+- Confirm with Noa that the "Remind me again" button and repeat options work on
+  her phone, and that the 2026-10-25 announcement reached her Watch.
+- Deploy order lesson stands: when the reminder shape changes, **worker first**,
+  then the app — the worker discards fields it does not know.
 
 - Confirm with Noa that the test notification actually appeared on her phone
   **and her Apple Watch**.
@@ -321,4 +319,11 @@ Newest entries at the bottom. One entry per working session.
   midnight, weekday skip, disabled, input sanitising); browser test at 390px in
   Hebrew of the Today button, quick sheet and full editor, no horizontal
   overflow. Not verified on her phone yet.
-- **Not deployed** — see section 9.
+- Wrangler login had expired; re-logged in via `npx wrangler login` (browser
+  approval). Deployed worker version 45deb27d, health OK, VAPID secret still
+  present. Her live record (one device, Hebrew, 14:00 daily, old item format)
+  read correctly by the new worker. Then pushed the app; Pages served v4
+  within a minute.
+- Sent the announcement with tag `news`: title "🐘 חדש באפליקציה", body (Avi's
+  exact wording) "התזכורת השנייה שביקשתי מאבינס". HTTP 201 from Apple's push
+  service.
